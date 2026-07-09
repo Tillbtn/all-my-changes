@@ -301,7 +301,11 @@ function buildPanel() {
       }
       if (group === "extrude") {
         refreshLayers();
-        if (box.checked && map.getPitch() < 20) map.easeTo({ pitch: 55, duration: 800 });
+        if (box.checked && map.getPitch() < 20) {
+          map.easeTo({ pitch: 55, duration: 800 });
+        } else if (!box.checked && map.getPitch() > 0) {
+          map.easeTo({ pitch: 0, duration: 800 });
+        }
       } else {
         for (const [layerId, g] of Object.entries(VISIBILITY_GROUP)) {
           if (g === group && map.getLayer(layerId)) {
