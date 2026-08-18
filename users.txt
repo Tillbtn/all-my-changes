@@ -1,0 +1,11 @@
+# One OSM username per line. ./update.sh processes them all;
+# lines starting with # (and blank lines) are ignored.
+Till_btn
+HenningP_LG
+hca
+OPerivar
+wqueck
+holzheizer
+Osmonav
+stephan75
+PantherStrix

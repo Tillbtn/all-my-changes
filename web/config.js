@@ -2,9 +2,14 @@
  * Everything here is meant to be edited - add your own basemaps and styles.
  */
 
+/* year of my last edit, read off the "l" property (YYYY-MM-DD). The
+ * pipeline used to ship a separate numeric year per feature; deriving it
+ * here instead saves a property on every one of them. */
+const EDIT_YEAR = ["to-number", ["slice", ["coalesce", ["get", "l"], "2022"], 0, 4]];
+
 /* color ramp used by the "Edit age" style: year of my last edit */
 const AGE_COLOR = [
-  "interpolate", ["linear"], ["coalesce", ["get", "y"], 2022],
+  "interpolate", ["linear"], EDIT_YEAR,
   2022, "#3b82f6",
   2023, "#22c55e",
   2024, "#eab308",
@@ -19,7 +24,7 @@ const AGE_STOPS = [
   [2026, [0xef, 0x44, 0x44]],
 ];
 function ageColor(props) {
-  const y = props.y || 2022;
+  const y = Number(String(props.l || "").slice(0, 4)) || 2022;
   let lo = AGE_STOPS[0], hi = AGE_STOPS[AGE_STOPS.length - 1];
   for (let i = 0; i < AGE_STOPS.length - 1; i++) {
     if (y >= AGE_STOPS[i][0] && y <= AGE_STOPS[i + 1][0]) {

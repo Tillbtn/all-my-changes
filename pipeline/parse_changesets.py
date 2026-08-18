@@ -12,7 +12,16 @@ geometry dropped so the resolve steps fetch a fresh one.
 import gzip
 import xml.etree.ElementTree as ET
 
-from common import CACHE_DIR, open_db
+from common import (
+    CACHE_DIR,
+    Phase,
+    Progress,
+    get_meta,
+    log,
+    open_db,
+    run,
+    set_meta,
+)
 
 OTYPES = {"node", "way", "relation"}
 ACTIONS = {"create", "modify", "delete"}
@@ -45,20 +54,31 @@ def parse_osc(path):
 
 def main():
     db = open_db()
+    if get_meta(db, "mode") == "quick":
+        # quick_qlever.py data is placeholder-only (no edit history):
+        # drop it and rebuild the object index from the changeset dumps
+        log("quick-mode dataset found - rebuilding from changesets")
+        db.execute("DELETE FROM objects")
+        db.execute("DELETE FROM geoms")
+        db.execute("UPDATE changesets SET parsed=0")
+        set_meta(db, "mode", "full")
+        db.commit()
     todo = db.execute(
         "SELECT id FROM changesets WHERE downloaded=1 AND parsed=0 ORDER BY id"
     ).fetchall()
     if not todo:
-        print("No new changesets to parse.")
+        log("no new changesets to parse")
         return
-    print(f"Parsing {len(todo)} changesets...")
+    log(f"parsing {len(todo)} osmChange dumps")
 
     n_elements = 0
     touched = set()
+    prog = Progress(len(todo), "parse", unit="changesets")
     for i, (cid,) in enumerate(todo, 1):
         path = CACHE_DIR / f"{cid}.osc.gz"
         if not path.exists():
-            print(f"  warning: missing cache file for changeset {cid}, skipping")
+            log(f"warning: missing cache file for changeset {cid}, skipping", 1)
+            prog.advance()
             continue
         for action, otype, oid, version, ts, lat, lon in parse_osc(path):
             n_elements += 1
@@ -89,27 +109,28 @@ def main():
         db.execute("UPDATE changesets SET parsed=1 WHERE id=?", (cid,))
         if i % 200 == 0:
             db.commit()
-            print(f"  {i}/{len(todo)} changesets, {n_elements} elements")
+        prog.advance(extra=f"{n_elements} elements, {len(touched)} touched")
     db.commit()
+    prog.finish(extra=f"{n_elements} elements")
 
     # drop cached geometry for objects whose known last edit is newer than
     # what was resolved -> they get re-resolved (via Overpass, the pbf only
     # serves objects older than its snapshot date)
-    dropped = 0
-    for otype, oid, ts in touched:
-        cur = db.execute(
-            "DELETE FROM geoms WHERE otype=? AND oid=? AND resolved_at < ?",
-            (otype, oid, ts),
-        )
-        dropped += cur.rowcount
-    db.commit()
+    with Phase(f"invalidating stale geometries for {len(touched)} edits") as p:
+        dropped = 0
+        for otype, oid, ts in touched:
+            cur = db.execute(
+                "DELETE FROM geoms WHERE otype=? AND oid=? AND resolved_at < ?",
+                (otype, oid, ts),
+            )
+            dropped += cur.rowcount
+        db.commit()
+        p.note(f"{dropped} to re-resolve")
 
     total = db.execute("SELECT COUNT(*) FROM objects").fetchone()[0]
-    print(
-        f"Parsed {len(todo)} changesets, {n_elements} elements. "
-        f"{total} distinct objects, {dropped} geometries invalidated."
-    )
+    log(f"parsed {len(todo)} changesets, {n_elements} elements; "
+        f"{total} distinct objects, {dropped} geometries invalidated")
 
 
 if __name__ == "__main__":
-    main()
+    run(main)

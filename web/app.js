@@ -5,17 +5,21 @@ const CFG = window.APP_CONFIG;
 
 /* sources: eager ones load on startup, lazy ones on first toggle */
 const SOURCES = {
-  polygons: { file: "data/polygons.geojson", eager: true },
-  lines: { file: "data/lines.geojson", eager: true },
-  relations: { file: "data/relations.geojson", eager: false },
-  points: { file: "data/points.geojson", eager: true },
-  vertices: { file: "data/vertices.geojson", eager: false },
-  deleted: { file: "data/deleted.geojson", eager: false },
+  polygons: { eager: true },
+  lines: { eager: true },
+  relations: { eager: false },
+  points: { eager: true },
+  vertices: { eager: false },
+  deleted: { eager: false },
 };
 
 const state = loadState();
 const loaded = {}; // source id -> GeoJSON (once fetched)
+const inflight = {}; // source id -> {got, total} while downloading
 let meta = null;
+/* per-user data directory; initUser() switches it to data/<user> when a
+ * users.json index exists (single-user layouts keep the flat data/) */
+let dataDir = "data";
 /* captured before the map writes its own position into the hash */
 const hadStartHash = !!location.hash;
 
@@ -110,8 +114,9 @@ map.on("styledata", ensureDataLayers);
 init();
 
 async function init() {
+  await initUser();
   try {
-    meta = await (await fetch("data/meta.json")).json();
+    meta = await (await fetch(`${dataDir}/meta.json`)).json();
   } catch {
     document.getElementById("stats").textContent =
       "no data yet - run the pipeline first (see README)";
@@ -137,15 +142,141 @@ async function init() {
   }
 }
 
+/* ------------------------------------------------------------ data loading
+ *
+ * The pipeline writes <name>.geojson.gz by default (meta.json says so) -
+ * gzipped GeoJSON is roughly a quarter of the size, which is what keeps a
+ * prolific mapper's dataset inside GitHub's file and Pages size limits. The
+ * browser inflates it here.
+ */
+
 async function fetchSource(id) {
   if (loaded[id]) return;
+  const gz = !meta || meta.gzip !== false;
+  const t0 = performance.now();
+  inflight[id] = { got: 0, total: 0 };
   try {
-    loaded[id] = await (await fetch(SOURCES[id].file)).json();
-  } catch {
+    loaded[id] = await fetchGeoJSON(`${dataDir}/${id}.geojson${gz ? ".gz" : ""}`, id);
+  } catch (first) {
+    try {
+      /* a dataset rebuilt with the other AMC_GZIP setting than its meta.json
+       * claims still loads instead of showing an empty layer */
+      loaded[id] = await fetchGeoJSON(`${dataDir}/${id}.geojson${gz ? "" : ".gz"}`, id);
+    } catch (second) {
+      console.warn(`amc: ${id} not loaded`, first, second);
+      loaded[id] = { type: "FeatureCollection", features: [] };
+    }
+  }
+  if (!Array.isArray(loaded[id].features)) {
     loaded[id] = { type: "FeatureCollection", features: [] };
   }
+  const bytes = inflight[id].got;
+  delete inflight[id];
+  renderLoading();
+  console.log(
+    `amc: ${id} - ${loaded[id].features.length} features, ` +
+    `${fmtBytes(bytes)} in ${((performance.now() - t0) / 1000).toFixed(1)}s`
+  );
   const src = map.getSource("edits-" + id);
   if (src) src.setData(loaded[id]);
+}
+
+async function fetchGeoJSON(url, id) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  const bytes = await readAll(res, id);
+  /* Decide on the gzip magic number, not the file name: whether a host
+   * serves .gz raw or with Content-Encoding (leaving the browser to inflate
+   * it) differs between GitHub Pages and a local python http.server. */
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    if (typeof DecompressionStream === "undefined") {
+      throw new Error("this browser cannot inflate gzip (no DecompressionStream)");
+    }
+    const stream = new Blob([bytes]).stream()
+      .pipeThrough(new DecompressionStream("gzip"));
+    return await new Response(stream).json();
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* read the body chunk by chunk so the overlay can show download progress */
+async function readAll(res, id) {
+  const total = Number(res.headers.get("content-length")) || 0;
+  if (!res.body) return new Uint8Array(await res.arrayBuffer());
+  const reader = res.body.getReader();
+  const chunks = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.length;
+    if (inflight[id]) {
+      inflight[id] = { got, total };
+      renderLoading();
+    }
+  }
+  const out = new Uint8Array(got);
+  let at = 0;
+  for (const c of chunks) {
+    out.set(c, at);
+    at += c.length;
+  }
+  return out;
+}
+
+function fmtBytes(n) {
+  if (!n) return "0 B";
+  const units = ["B", "kB", "MB", "GB"];
+  const i = Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+  return `${(n / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`;
+}
+
+/* "loading areas 12.3/33.1 MB - ways 4.0 MB" for everything in flight */
+function renderLoading() {
+  const el = document.getElementById("loading");
+  const parts = Object.entries(inflight).map(([id, p]) =>
+    `${id} ${fmtBytes(p.got)}${p.total ? "/" + fmtBytes(p.total) : ""}`
+  );
+  if (!parts.length) return;
+  el.textContent = `loading ${parts.join(" \u00b7 ")}\u2026`;
+}
+
+/* pick the active user from ?u= / localStorage / first entry, point
+ * dataDir at their directory and wire up the switcher dropdown */
+async function initUser() {
+  let users = [];
+  try {
+    const r = await fetch("data/users.json");
+    if (r.ok) users = await r.json();
+  } catch { /* no index -> legacy flat data/ layout */ }
+  if (!Array.isArray(users) || !users.length) return;
+
+  const want =
+    new URLSearchParams(location.search).get("u") ||
+    localStorage.getItem("amc-user");
+  const current = users.find((u) => u.dir === want) || users[0];
+  dataDir = "data/" + encodeURIComponent(current.dir);
+  localStorage.setItem("amc-user", current.dir);
+  document.title = `${current.user} · OSM changes`;
+  document.querySelector("#panel h1").textContent =
+    `OSM changes · ${current.user}`;
+
+  const sel = document.getElementById("user");
+  for (const u of users) {
+    const label = `${u.user} (${(u.objects || 0).toLocaleString()})`;
+    sel.add(new Option(label, u.dir, false, u.dir === current.dir));
+  }
+  if (users.length > 1) {
+    document.getElementById("user-row").style.display = "";
+  }
+  sel.onchange = () => {
+    localStorage.setItem("amc-user", sel.value);
+    const url = new URL(location);
+    url.searchParams.set("u", sel.value);
+    url.hash = ""; // let the map fly to the new user's bbox
+    location.href = url;
+  };
 }
 
 async function applyBasemap(id) {

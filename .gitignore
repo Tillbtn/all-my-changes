@@ -1,7 +1,4 @@
 .venv/
-data/*.pbf
-data/*.sqlite
-data/*.sqlite-*
-data/cache/
+data/
 web/data/
 __pycache__/

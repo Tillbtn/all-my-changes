@@ -1,9 +1,15 @@
-"""Step 4: resolve remaining geometries via the Overpass API.
+"""Step 4c: resolve remaining geometries via the Overpass API (last resort).
 
-Everything the pbf pass could not answer lands here: objects outside the
-extract region and objects edited after the pbf snapshot. Queries are
-batched by id and throttled. Objects Overpass does not return no longer
-exist; deleted nodes fall back to their last coordinates from my changeset.
+After pbf, QLever and API passes this is only relations QLever did not
+know (edited after its snapshot, or deleted). Queries are batched by id
+and throttled. Objects Overpass does not return no longer exist; deleted
+nodes fall back to their last coordinates from the changeset dumps.
+
+Overpass is the slowest and most fragile source, so every batch is logged
+with the mirror it hit, its wall time and the response size; the step
+summary adds up request time, throttling and mirror rotations. Overpass
+`remark` lines (timeouts, memory limits) are surfaced instead of silently
+producing an empty batch.
 """
 
 import json
@@ -12,7 +18,19 @@ import time
 import osm2geojson
 import requests
 
-from common import OVERPASS_API, OVERPASS_SLEEP, USER_AGENT, open_db
+from common import (
+    OVERPASS_API,
+    OVERPASS_SLEEP,
+    USER_AGENT,
+    HttpStats,
+    Phase,
+    Progress,
+    fmt_dur,
+    log,
+    loads_lenient,
+    open_db,
+    run,
+)
 
 # rotated round-robin when an instance is overloaded (429/504)
 ENDPOINTS = [
@@ -23,6 +41,10 @@ ENDPOINTS = [
 _endpoint = 0
 
 BATCH = {"node": 500, "way": 250, "relation": 40}
+
+STATS = HttpStats("Overpass")
+SLEPT = 0.0
+ROTATIONS = 0
 
 # tag keys that make a closed way an area (approximation of osmium's default)
 AREA_KEYS = {
@@ -43,10 +65,15 @@ def is_area(tags, closed):
     return any(k in tags for k in AREA_KEYS)
 
 
-def overpass(query, retries=8):
-    global _endpoint
+def host(url):
+    return url.split("/")[2]
+
+
+def overpass(query, retries=8, label="query"):
+    global _endpoint, ROTATIONS
     for attempt in range(retries):
         url = ENDPOINTS[_endpoint]
+        t0 = time.monotonic()
         try:
             r = requests.post(
                 url,
@@ -55,18 +82,39 @@ def overpass(query, retries=8):
                 timeout=300,
             )
         except requests.RequestException as e:
-            print(f"  overpass error on {url} ({e}), rotating...")
+            STATS.retries += 1
+            ROTATIONS += 1
+            log(f"overpass error on {host(url)} after "
+                f"{fmt_dur(time.monotonic() - t0)} ({e}), rotating...", 1)
             _endpoint = (_endpoint + 1) % len(ENDPOINTS)
             time.sleep(10)
+            STATS.wait(10)
             continue
+        dur = time.monotonic() - t0
         if r.status_code in (429, 504, 502, 503):
-            print(f"  HTTP {r.status_code} from {url}, rotating mirror...")
+            STATS.retries += 1
+            ROTATIONS += 1
+            log(f"HTTP {r.status_code} from {host(url)} after {fmt_dur(dur)}, "
+                "rotating mirror...", 1)
             _endpoint = (_endpoint + 1) % len(ENDPOINTS)
-            time.sleep(10 if attempt < len(ENDPOINTS) else 60)
+            wait = 10 if attempt < len(ENDPOINTS) else 60
+            time.sleep(wait)
+            STATS.wait(wait)
             continue
         r.raise_for_status()
-        return r.json()
+        data = loads_lenient(r.content, label)
+        STATS.record(f"{label} @{host(url)}", dur, nbytes=len(r.content),
+                     rows=len(data.get("elements", [])))
+        if data.get("remark"):
+            log(f"overpass remark on {label}: {data['remark']}", 1)
+        return data
     raise RuntimeError("all overpass mirrors keep failing")
+
+
+def pause():
+    global SLEPT
+    time.sleep(OVERPASS_SLEEP)
+    SLEPT += OVERPASS_SLEEP
 
 
 def chunks(lst, n):
@@ -101,7 +149,7 @@ def relation_features(response):
     try:
         fc = osm2geojson.json2geojson(response)
     except Exception as e:
-        print(f"  osm2geojson failed: {e}")
+        log(f"osm2geojson failed: {e}", 1)
         return
     for feat in fc.get("features", []):
         props = feat.get("properties", {})
@@ -111,6 +159,8 @@ def relation_features(response):
 
 
 def store(db, otype, found, requested, now):
+    """Store the batch; ids Overpass did not return are gone from the live
+    database. Returns how many of those were recorded as deleted."""
     for oid, geom, tags in found:
         db.execute(
             "INSERT OR REPLACE INTO geoms"
@@ -120,6 +170,7 @@ def store(db, otype, found, requested, now):
              json.dumps(tags, ensure_ascii=False), now),
         )
     found_ids = {oid for oid, _, _ in found}
+    gone = 0
     for oid in requested - found_ids:
         # gone from the live db: deleted by someone else (or redacted)
         row = db.execute(
@@ -137,38 +188,44 @@ def store(db, otype, found, requested, now):
             " VALUES (?,?,?,?,?,?,?)",
             (otype, oid, "deleted" if geom else "missing", "osc", geom, "{}", now),
         )
+        gone += 1
     db.commit()
+    return gone
 
 
 def main():
     db = open_db()
     todo = {"node": [], "way": [], "relation": []}
-    rows = db.execute(
-        """
-        SELECT o.otype, o.oid FROM objects o
-        LEFT JOIN geoms g ON g.otype=o.otype AND g.oid=o.oid
-        WHERE g.oid IS NULL
-        ORDER BY o.otype, o.oid
-        """
-    )
-    for otype, oid in rows:
-        todo[otype].append(oid)
+    with Phase("selecting objects no earlier source could resolve") as p:
+        rows = db.execute(
+            """
+            SELECT o.otype, o.oid FROM objects o
+            LEFT JOIN geoms g ON g.otype=o.otype AND g.oid=o.oid
+            WHERE g.oid IS NULL
+            ORDER BY o.otype, o.oid
+            """
+        )
+        for otype, oid in rows:
+            todo[otype].append(oid)
+        p.note(", ".join(f"{len(v)} {k}s" for k, v in todo.items()))
     total = sum(len(v) for v in todo.values())
     if not total:
-        print("Nothing left for Overpass.")
+        log("Nothing left for Overpass.")
         return
-    print(
-        f"Overpass fallback for {total} objects "
-        f"({len(todo['node'])} nodes, {len(todo['way'])} ways, "
-        f"{len(todo['relation'])} relations)..."
-    )
+    n_batches = sum(-(-len(v) // BATCH[k]) for k, v in todo.items())
+    log(f"Overpass fallback for {total} objects in {n_batches} batches "
+        f"({OVERPASS_SLEEP}s between them, so at least "
+        f"{fmt_dur(n_batches * OVERPASS_SLEEP)} of sleeping)")
 
-    done = 0
+    prog = Progress(total, "overpass", unit="objects")
+    ok = gone = 0
     for otype in ("node", "way", "relation"):
-        for chunk in chunks(todo[otype], BATCH[otype]):
+        batch = BATCH[otype]
+        for i, chunk in enumerate(chunks(todo[otype], batch), 1):
             ids = ",".join(map(str, chunk))
             query = f"[out:json][timeout:180];{otype}(id:{ids});out geom;"
-            resp = overpass(query)
+            label = f"{otype} batch {i} ({len(chunk)} ids)"
+            resp = overpass(query, label=label)
             now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             if otype == "node":
                 found = list(node_features(resp.get("elements", [])))
@@ -176,12 +233,20 @@ def main():
                 found = list(way_features(resp.get("elements", [])))
             else:
                 found = list(relation_features(resp))
-            store(db, otype, found, set(chunk), now)
-            done += len(chunk)
-            print(f"  {done}/{total} ({len(found)}/{len(chunk)} found in batch)")
-            time.sleep(OVERPASS_SLEEP)
-    print("Overpass resolution done.")
+            gone += store(db, otype, found, set(chunk), now)
+            ok += len(found)
+            prog.advance(len(chunk),
+                         extra=f"{ok} resolved, {gone} gone "
+                               f"(last batch {len(found)}/{len(chunk)})")
+            pause()
+    prog.finish(extra=f"{ok} resolved, {gone} recorded as deleted/missing")
+    STATS.summary()
+    if SLEPT:
+        log(f"politeness sleeps between batches: {fmt_dur(SLEPT)} "
+            f"(OVERPASS_SLEEP={OVERPASS_SLEEP}s)", 1)
+    if ROTATIONS:
+        log(f"mirror rotations after errors: {ROTATIONS}", 1)
 
 
 if __name__ == "__main__":
-    main()
+    run(main)
