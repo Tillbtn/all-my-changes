@@ -1,0 +1,52 @@
+{
+ "user": "Till_btn-qlever",
+ "generated_at": "2026-08-18T18:01:59Z",
+ "changesets": 0,
+ "latest_changeset": null,
+ "objects": 119255,
+ "counts": {
+  "missing": 0,
+  "polygons": 17415,
+  "lines": 6147,
+  "relations": 94,
+  "points": 9163,
+  "vertices": 86436,
+  "deleted": 0
+ },
+ "bbox": [
+  -16.840412,
+  28.04359,
+  16.327604,
+  55.722544
+ ],
+ "pbf_timestamp": null,
+ "mode": "full",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 17415,
+   "bytes": 796225
+  },
+  "lines": {
+   "features": 6147,
+   "bytes": 316153
+  },
+  "relations": {
+   "features": 94,
+   "bytes": 209560
+  },
+  "points": {
+   "features": 9163,
+   "bytes": 169739
+  },
+  "vertices": {
+   "features": 86436,
+   "bytes": 971968
+  },
+  "deleted": {
+   "features": 0,
+   "bytes": 82
+  }
+ }
+}

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All my OSM changes</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map"></div>
+
+<div id="panel">
+  <h1>All my OSM changes</h1>
+  <div class="row" id="user-row" style="display:none">
+    <label for="user">Mapper</label>
+    <select id="user"></select>
+  </div>
+  <div class="row">
+    <label for="basemap">Basemap</label>
+    <select id="basemap"></select>
+  </div>
+  <div class="row">
+    <label for="highlight">Highlight</label>
+    <select id="highlight"></select>
+  </div>
+  <fieldset id="layer-toggles">
+    <legend>Layers</legend>
+    <label><input type="checkbox" id="toggle-polygons" checked> Areas</label>
+    <label><input type="checkbox" id="toggle-lines" checked> Ways</label>
+    <label><input type="checkbox" id="toggle-relations" checked> Relations <span class="hint">(all members)</span></label>
+    <label><input type="checkbox" id="toggle-points" checked> Points</label>
+    <label><input type="checkbox" id="toggle-vertices"> Vertices <span class="hint">(untagged nodes)</span></label>
+    <label><input type="checkbox" id="toggle-deleted"> Deleted</label>
+    <label><input type="checkbox" id="toggle-extrude"> 3D buildings</label>
+    <label class="sub"><input type="checkbox" id="toggle-roofshapes" checked> Roof shapes <span class="hint">(off = flat tops)</span></label>
+  </fieldset>
+  <div id="stats">loading data&hellip;</div>
+  <div id="attribution">
+    map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors
+  </div>
+</div>
+
+<div id="loading">loading edits&hellip;</div>
+
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script src="config.js"></script>
+<script src="roofs3d.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

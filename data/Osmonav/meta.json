@@ -1,0 +1,52 @@
+{
+ "user": "Osmonav",
+ "generated_at": "2026-08-18T18:01:40Z",
+ "changesets": 0,
+ "latest_changeset": null,
+ "objects": 73687,
+ "counts": {
+  "missing": 0,
+  "polygons": 5673,
+  "lines": 1702,
+  "relations": 93,
+  "points": 1187,
+  "vertices": 65032,
+  "deleted": 0
+ },
+ "bbox": [
+  -84.452209,
+  -17.732933,
+  168.316598,
+  56.091384
+ ],
+ "pbf_timestamp": null,
+ "mode": "quick",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 5673,
+   "bytes": 227625
+  },
+  "lines": {
+   "features": 1702,
+   "bytes": 97426
+  },
+  "relations": {
+   "features": 93,
+   "bytes": 31926
+  },
+  "points": {
+   "features": 1187,
+   "bytes": 22483
+  },
+  "vertices": {
+   "features": 65032,
+   "bytes": 746049
+  },
+  "deleted": {
+   "features": 0,
+   "bytes": 82
+  }
+ }
+}

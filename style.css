@@ -1,0 +1,170 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+}
+
+#panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 5;
+  width: 250px;
+  background: rgba(15, 20, 34, 0.92);
+  color: #e5e9f2;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  font-size: 13px;
+  backdrop-filter: blur(6px);
+}
+
+#panel h1 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+#panel .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#panel .row label {
+  width: 62px;
+  flex-shrink: 0;
+  color: #9aa4b8;
+}
+
+#panel select {
+  flex: 1;
+  min-width: 0;
+  background: #1c2436;
+  color: #e5e9f2;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 12.5px;
+}
+
+#layer-toggles {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 6px 10px 8px;
+}
+
+#layer-toggles legend {
+  color: #9aa4b8;
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+#layer-toggles label {
+  display: block;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+#layer-toggles .hint {
+  color: #77809a;
+  font-size: 11px;
+}
+
+#layer-toggles .sub {
+  margin-left: 20px;
+}
+
+#stats {
+  color: #b6c0d4;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+#attribution {
+  color: #77809a;
+  font-size: 11px;
+}
+
+#attribution a {
+  color: #9db4e0;
+}
+
+#loading {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(15, 20, 34, 0.9);
+  color: #e5e9f2;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.maplibregl-popup-content {
+  background: rgba(20, 26, 42, 0.97);
+  color: #e5e9f2;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.maplibregl-popup-tip {
+  border-top-color: rgba(20, 26, 42, 0.97) !important;
+  border-bottom-color: rgba(20, 26, 42, 0.97) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: #9aa4b8;
+  font-size: 18px;
+  padding: 2px 8px;
+}
+
+.pp-title {
+  font-weight: 650;
+  margin-bottom: 2px;
+}
+
+.pp-tag {
+  color: #9aa4b8;
+  font-family: ui-monospace, monospace;
+  font-size: 11.5px;
+}
+
+.pp-meta {
+  margin-top: 4px;
+  color: #b6c0d4;
+}
+
+.pp-link {
+  margin-top: 4px;
+}
+
+.pp-link a {
+  color: #7cb1ff;
+}
+
+#panel hr, .maplibregl-popup-content hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 8px 0;
+}
+
+@media (max-width: 640px) {
+  #panel {
+    width: auto;
+    right: 12px;
+  }
+}

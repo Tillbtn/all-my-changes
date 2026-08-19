@@ -1,0 +1,52 @@
+{
+ "user": "Till_btn",
+ "generated_at": "2026-08-18T17:57:45Z",
+ "changesets": 3728,
+ "latest_changeset": "2026-07-21T07:43:46Z",
+ "objects": 141184,
+ "counts": {
+  "missing": 7839,
+  "polygons": 20033,
+  "lines": 8919,
+  "relations": 301,
+  "points": 11133,
+  "vertices": 92136,
+  "deleted": 823
+ },
+ "bbox": [
+  -16.840412,
+  28.04359,
+  16.327604,
+  55.722544
+ ],
+ "pbf_timestamp": "2026-07-07T20:21:26Z",
+ "mode": "full",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 20033,
+   "bytes": 919468
+  },
+  "lines": {
+   "features": 8919,
+   "bytes": 472302
+  },
+  "relations": {
+   "features": 301,
+   "bytes": 1650570
+  },
+  "points": {
+   "features": 11133,
+   "bytes": 214875
+  },
+  "vertices": {
+   "features": 92136,
+   "bytes": 1010608
+  },
+  "deleted": {
+   "features": 823,
+   "bytes": 12516
+  }
+ }
+}

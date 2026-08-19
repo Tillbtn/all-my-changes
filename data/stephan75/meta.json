@@ -1,0 +1,52 @@
+{
+ "user": "stephan75",
+ "generated_at": "2026-08-18T19:12:08Z",
+ "changesets": 0,
+ "latest_changeset": null,
+ "objects": 17119,
+ "counts": {
+  "missing": 0,
+  "polygons": 3846,
+  "lines": 240,
+  "relations": 24,
+  "points": 638,
+  "vertices": 12371,
+  "deleted": 0
+ },
+ "bbox": [
+  5.585346,
+  45.285775,
+  29.357721,
+  60.812119
+ ],
+ "pbf_timestamp": null,
+ "mode": "quick",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 3846,
+   "bytes": 162238
+  },
+  "lines": {
+   "features": 240,
+   "bytes": 13847
+  },
+  "relations": {
+   "features": 24,
+   "bytes": 25746
+  },
+  "points": {
+   "features": 638,
+   "bytes": 15717
+  },
+  "vertices": {
+   "features": 12371,
+   "bytes": 144666
+  },
+  "deleted": {
+   "features": 0,
+   "bytes": 82
+  }
+ }
+}

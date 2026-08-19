@@ -1,0 +1,53 @@
+{
+ "user": "OPerivar",
+ "generated_at": "2026-08-18T19:58:47Z",
+ "changesets": 0,
+ "latest_changeset": null,
+ "objects": 927785,
+ "counts": {
+  "missing": 0,
+  "polygons": 47883,
+  "lines": 18310,
+  "relations": 462,
+  "points": 12285,
+  "vertices": 282949,
+  "deleted": 0,
+  "vertices_total": 848845
+ },
+ "bbox": [
+  -177.377104,
+  -54.816043,
+  179.187303,
+  70.944121
+ ],
+ "pbf_timestamp": null,
+ "mode": "quick",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 47883,
+   "bytes": 3552881
+  },
+  "lines": {
+   "features": 18310,
+   "bytes": 3682859
+  },
+  "relations": {
+   "features": 462,
+   "bytes": 1660680
+  },
+  "points": {
+   "features": 12285,
+   "bytes": 234316
+  },
+  "vertices": {
+   "features": 282949,
+   "bytes": 3453117
+  },
+  "deleted": {
+   "features": 0,
+   "bytes": 82
+  }
+ }
+}

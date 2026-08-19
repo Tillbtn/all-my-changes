@@ -1,0 +1,52 @@
+{
+ "user": "HenningP_LG",
+ "generated_at": "2026-08-18T19:51:38Z",
+ "changesets": 0,
+ "latest_changeset": null,
+ "objects": 676,
+ "counts": {
+  "missing": 0,
+  "polygons": 12,
+  "lines": 341,
+  "relations": 5,
+  "points": 79,
+  "vertices": 239,
+  "deleted": 0
+ },
+ "bbox": [
+  -17.200467,
+  32.857842,
+  11.111521,
+  53.571876
+ ],
+ "pbf_timestamp": null,
+ "mode": "quick",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 12,
+   "bytes": 2312
+  },
+  "lines": {
+   "features": 341,
+   "bytes": 22260
+  },
+  "relations": {
+   "features": 5,
+   "bytes": 7563
+  },
+  "points": {
+   "features": 79,
+   "bytes": 2565
+  },
+  "vertices": {
+   "features": 239,
+   "bytes": 3009
+  },
+  "deleted": {
+   "features": 0,
+   "bytes": 82
+  }
+ }
+}

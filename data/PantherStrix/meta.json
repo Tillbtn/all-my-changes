@@ -1,0 +1,52 @@
+{
+ "user": "PantherStrix",
+ "generated_at": "2026-08-18T20:00:56Z",
+ "changesets": 0,
+ "latest_changeset": null,
+ "objects": 262220,
+ "counts": {
+  "missing": 0,
+  "polygons": 27378,
+  "lines": 12190,
+  "relations": 888,
+  "points": 22339,
+  "vertices": 199425,
+  "deleted": 0
+ },
+ "bbox": [
+  -156.452092,
+  -53.431963,
+  176.990159,
+  67.452182
+ ],
+ "pbf_timestamp": null,
+ "mode": "quick",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 27378,
+   "bytes": 1420491
+  },
+  "lines": {
+   "features": 12190,
+   "bytes": 508196
+  },
+  "relations": {
+   "features": 888,
+   "bytes": 334071
+  },
+  "points": {
+   "features": 22339,
+   "bytes": 417624
+  },
+  "vertices": {
+   "features": 199425,
+   "bytes": 2199026
+  },
+  "deleted": {
+   "features": 0,
+   "bytes": 82
+  }
+ }
+}

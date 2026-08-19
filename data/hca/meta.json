@@ -1,0 +1,53 @@
+{
+ "user": "hca",
+ "generated_at": "2026-08-18T19:51:10Z",
+ "changesets": 10984,
+ "latest_changeset": "2026-07-21T15:25:53Z",
+ "objects": 7933941,
+ "counts": {
+  "missing": 0,
+  "polygons": 219617,
+  "lines": 53823,
+  "relations": 3320,
+  "points": 6853,
+  "vertices": 294244,
+  "deleted": 0,
+  "vertices_total": 7650328
+ },
+ "bbox": [
+  -151.810585,
+  -35.617824,
+  146.162672,
+  69.919253
+ ],
+ "pbf_timestamp": "2026-07-20T20:21:16Z",
+ "mode": "quick",
+ "gzip": true,
+ "precision": 6,
+ "files": {
+  "polygons": {
+   "features": 219617,
+   "bytes": 29183330
+  },
+  "lines": {
+   "features": 53823,
+   "bytes": 12172238
+  },
+  "relations": {
+   "features": 3320,
+   "bytes": 6725385
+  },
+  "points": {
+   "features": 6853,
+   "bytes": 148392
+  },
+  "vertices": {
+   "features": 294244,
+   "bytes": 3988065
+  },
+  "deleted": {
+   "features": 0,
+   "bytes": 82
+  }
+ }
+}
